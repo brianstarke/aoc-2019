@@ -13,19 +13,23 @@ import (
 var grid map[uint32]*point
 
 type (
-	wire  int
+	wiremap  map[wiretype]*wire
+	wiretype int
+	wire     struct {
+		Length int
+	}
 	point struct {
 		X        int
 		Y        int
-		Wires    []wire
+		Wires    wiremap
 		Distance int // manhattan distance from origin
 	}
 )
 
 // constants
 const (
-	WIRE1 wire = 1
-	WIRE2 wire = 2
+	WIRE1 wiretype = 1
+	WIRE2 wiretype = 2
 )
 
 func main() {
@@ -35,21 +39,33 @@ func main() {
 	var intersections []*point
 
 	for _, p := range grid {
-		if len(p.Wires) > 1 {
+		if len(p.Wires) > 1 && hasWiretype(p.Wires, WIRE1) && hasWiretype(p.Wires, WIRE2) {
 			intersections = append(intersections, p)
 		}
 	}
 
-	// find the most smol (more efficient to do this above but whatevs)
-	var smol int
+	var closest int
+	var shortest int
 
 	for idx, i := range intersections {
-		if idx == 0 || i.Distance < smol {
-			smol = i.Distance
+		l := sumWirelengths(i.Wires)
+
+		if idx == 0 {
+			closest = i.Distance
+			shortest = l
+		}
+
+		if i.Distance < closest {
+			closest = i.Distance
+		}
+
+		if l < shortest {
+			shortest = l
 		}
 	}
 
-	log.Print(smol)
+	log.Print(closest)
+	log.Print(shortest)
 }
 
 func initGrid() {
@@ -70,10 +86,10 @@ func manhattanDistance(x, y int) int {
 	return int(math.Abs(float64(x)) + math.Abs(float64(y)))
 }
 
-func plotLines(directions []string, w wire) {
+func plotLines(directions []string, w wiretype) {
 	// set current X and Y starting points, these will be used as a cursor in the below
 	// loop.
-	cX, cY := 0, 0
+	cX, cY, length := 0, 0, 0
 
 	for _, d := range directions {
 		direction := d[0:1]
@@ -81,13 +97,12 @@ func plotLines(directions []string, w wire) {
 		if err != nil {
 			panic(err)
 		}
-		// log.Printf("%s:%d", direction, distance)
-		cX, cY = plotLine(cX, cY, direction, distance, w)
+		cX, cY, length = plotLine(cX, cY, length, direction, distance, w)
 	}
 }
 
 // returns new cursor position
-func plotLine(curX, curY int, direction string, distance int, w wire) (int, int) {
+func plotLine(curX, curY, length int, direction string, distance int, w wiretype) (int, int, int) {
 	for i := 0; i < distance; i++ {
 		switch direction {
 		case "R":
@@ -101,22 +116,39 @@ func plotLine(curX, curY int, direction string, distance int, w wire) (int, int)
 		default:
 			panic("FUCK!")
 		}
-		addPoint(curX, curY, w)
+		length++
+		addPoint(curX, curY, length, w)
 	}
 
-	return curX, curY
+	return curX, curY, length
 }
 
-func addPoint(x, y int, w wire) {
+func addPoint(x, y, length int, wt wiretype) {
 	h := getXYHash(x, y)
 
 	// Add this point to the grid if it is not already present.
 	if _, ok := grid[h]; !ok {
-		grid[h] = &point{X: x, Y: y, Distance: manhattanDistance(x, y)}
+		grid[h] = &point{X: x, Y: y, Distance: manhattanDistance(x, y), Wires: make(wiremap)}
 	}
 
-	grid[h].Wires = append(grid[h].Wires, w)
+	grid[h].Wires[wt] = &wire{Length: length}
 
+	return
+}
+
+// Helper function to check map for key existence.
+func hasWiretype(wires wiremap, wt wiretype) bool {
+	if _, ok := wires[wt]; !ok {
+		return false
+	}
+	return true
+}
+
+// Helper function to sum the lengths of ze wires.
+func sumWirelengths(wires wiremap) (sum int) {
+	for _, v := range wires {
+		sum += v.Length
+	}
 	return
 }
 
