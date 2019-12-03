@@ -64,8 +64,8 @@ func main() {
 		}
 	}
 
-	log.Print(closest)
-	log.Print(shortest)
+	log.Printf("Part 1 (closest intersection): %d", closest)
+	log.Printf("Part 2 (shortest intersection): %d", shortest)
 }
 
 func initGrid() {
