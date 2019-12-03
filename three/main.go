@@ -10,24 +10,32 @@ import (
 	"strings"
 )
 
-var grid map[uint32]*Point
+var grid map[uint32]*point
 
-// Point holds data about a point on a grid.
-type Point struct {
-	X        int
-	Y        int
-	HasWire1 bool
-	HasWire2 bool
-}
+type (
+	wire  int
+	point struct {
+		X      int
+		Y      int
+		Wires  []wire
+		Length int
+	}
+)
+
+// constants
+const (
+	WIRE1 wire = 1
+	WIRE2 wire = 2
+)
 
 func main() {
 	initGrid()
 
 	// get the intersections
-	var intersections []*Point
+	var intersections []*point
 
 	for _, p := range grid {
-		if p.HasWire1 && p.HasWire2 {
+		if len(p.Wires) > 1 {
 			intersections = append(intersections, p)
 		}
 	}
@@ -52,19 +60,19 @@ func initGrid() {
 		panic(err)
 	}
 
-	grid = make(map[uint32]*Point)
+	grid = make(map[uint32]*point)
 
 	lines := strings.Split(string(b), "\n")
 
-	plotLines(strings.Split(lines[0], ","), true)
-	plotLines(strings.Split(lines[1], ","), false)
+	plotLines(strings.Split(lines[0], ","), WIRE1)
+	plotLines(strings.Split(lines[1], ","), WIRE2)
 }
 
 func manhattanDistance(x, y int) int {
 	return int(math.Abs(float64(x)) + math.Abs(float64(y)))
 }
 
-func plotLines(directions []string, isOne bool) {
+func plotLines(directions []string, w wire) {
 	// set current X and Y starting points, these will be used as a cursor in the below
 	// loop.
 	cX, cY := 0, 0
@@ -76,12 +84,12 @@ func plotLines(directions []string, isOne bool) {
 			panic(err)
 		}
 		// log.Printf("%s:%d", direction, distance)
-		cX, cY = plotLine(cX, cY, direction, distance, isOne)
+		cX, cY = plotLine(cX, cY, direction, distance, w)
 	}
 }
 
 // returns new cursor position
-func plotLine(curX, curY int, direction string, distance int, isOne bool) (int, int) {
+func plotLine(curX, curY int, direction string, distance int, w wire) (int, int) {
 	for i := 0; i < distance; i++ {
 		switch direction {
 		case "R":
@@ -95,28 +103,22 @@ func plotLine(curX, curY int, direction string, distance int, isOne bool) (int, 
 		default:
 			panic("FUCK!")
 		}
-		addPoint(curX, curY, isOne)
+		addPoint(curX, curY, w)
 	}
 
 	return curX, curY
 }
 
-func addPoint(x, y int, isOne bool) {
+func addPoint(x, y int, w wire) {
 	h := getXYHash(x, y)
-
-	// log.Printf("%d %d,%d added", h, x, y)
 
 	// Add this point to the grid if it is not already present.
 	if _, ok := grid[h]; !ok {
-		grid[h] = &Point{X: x, Y: y}
+		grid[h] = &point{X: x, Y: y, Length: manhattanDistance(x, y)}
 	}
 
-	if isOne {
-		grid[h].HasWire1 = true
-		return
-	}
+	grid[h].Wires = append(grid[h].Wires, w)
 
-	grid[h].HasWire2 = true
 	return
 }
 
