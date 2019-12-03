@@ -15,10 +15,10 @@ var grid map[uint32]*point
 type (
 	wire  int
 	point struct {
-		X      int
-		Y      int
-		Wires  []wire
-		Length int
+		X        int
+		Y        int
+		Wires    []wire
+		Distance int // manhattan distance from origin
 	}
 )
 
@@ -44,10 +44,8 @@ func main() {
 	var smol int
 
 	for idx, i := range intersections {
-		d := manhattanDistance(i.X, i.Y)
-
-		if idx == 0 || d < smol {
-			smol = d
+		if idx == 0 || i.Distance < smol {
+			smol = i.Distance
 		}
 	}
 
@@ -114,7 +112,7 @@ func addPoint(x, y int, w wire) {
 
 	// Add this point to the grid if it is not already present.
 	if _, ok := grid[h]; !ok {
-		grid[h] = &point{X: x, Y: y, Length: manhattanDistance(x, y)}
+		grid[h] = &point{X: x, Y: y, Distance: manhattanDistance(x, y)}
 	}
 
 	grid[h].Wires = append(grid[h].Wires, w)
