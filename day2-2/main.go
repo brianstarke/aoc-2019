@@ -8,6 +8,11 @@ import (
 )
 
 func main() {
+	min := NewIntcomputer(0, 0).Execute()
+	max := NewIntcomputer(99, 99).Execute()
+
+	fmt.Printf("min/max %d - %d\n", min, max)
+
 	for noun := 0; noun < 100; noun++ {
 		for verb := 0; verb < 100; verb++ {
 			c := NewIntcomputer(noun, verb)
